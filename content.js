@@ -122,6 +122,73 @@
   }
 
   /* ---------------------------------------------------------------- */
+  /*  Sensitive field detection (NEVER capture credentials)            */
+  /* ---------------------------------------------------------------- */
+
+  /**
+   * Keywords that indicate a field is related to authentication.
+   * Matched case-insensitively against name, id, autocomplete,
+   * placeholder, and aria-label attributes.
+   */
+  const SENSITIVE_KEYWORDS = [
+    "password", "passwd", "pass", "pwd",
+    "username", "user_name", "user-name", "userid", "user_id", "user-id",
+    "login", "signin", "sign-in", "sign_in",
+    "credential", "secret", "token", "api_key", "apikey", "api-key",
+    "otp", "one-time", "onetime", "totp", "mfa", "2fa",
+    "ssn", "social-security", "social_security",
+    "credit-card", "credit_card", "creditcard",
+    "card-number", "card_number", "cardnumber",
+    "cvv", "cvc", "csc", "security-code", "security_code",
+  ];
+
+  /** Input types that are inherently sensitive. */
+  const SENSITIVE_TYPES = new Set(["password"]);
+
+  /** Autocomplete tokens that are sensitive. */
+  const SENSITIVE_AUTOCOMPLETE = new Set([
+    "current-password", "new-password",
+    "username", "email",
+    "one-time-code",
+    "cc-number", "cc-csc", "cc-exp", "cc-exp-month", "cc-exp-year", "cc-name",
+  ]);
+
+  /**
+   * Returns true if `el` (or any ancestor input/form-field it belongs to)
+   * is a credential / sensitive field. When true the event MUST be dropped.
+   */
+  function isSensitiveField(el) {
+    // Walk up to find the actual input/textarea/select if we clicked a child.
+    const field = el.closest("input, textarea, select") || el;
+
+    // 1. Check type attribute.
+    const type = (field.getAttribute("type") || "").toLowerCase();
+    if (SENSITIVE_TYPES.has(type)) return true;
+
+    // 2. Check autocomplete attribute.
+    const ac = (field.getAttribute("autocomplete") || "").toLowerCase();
+    if (SENSITIVE_AUTOCOMPLETE.has(ac)) return true;
+
+    // 3. Keyword scan across name, id, placeholder, aria-label.
+    const haystack = [
+      field.getAttribute("name"),
+      field.id,
+      field.getAttribute("placeholder"),
+      field.getAttribute("aria-label"),
+      field.getAttribute("autocomplete"),
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+
+    for (const kw of SENSITIVE_KEYWORDS) {
+      if (haystack.includes(kw)) return true;
+    }
+
+    return false;
+  }
+
+  /* ---------------------------------------------------------------- */
   /*  Send event to background                                        */
   /* ---------------------------------------------------------------- */
 
@@ -146,6 +213,9 @@
         "a, button, input[type='submit'], input[type='button'], [role='button'], label, select, summary, details"
       ) || e.target;
 
+      // NEVER capture clicks on sensitive / credential fields.
+      if (isSensitiveField(el)) return;
+
       send({
         action: "click",
         ...elementContext(el),
@@ -164,6 +234,9 @@
     if (!isRecording) return;
     const el = e.target;
     if (!el || !("value" in el)) return;
+
+    // NEVER capture input into sensitive / credential fields.
+    if (isSensitiveField(el)) return;
 
     // Clear previous debounce timer for this element.
     const prev = inputTimers.get(el);
@@ -193,6 +266,9 @@
       if (!isRecording) return;
       const el = e.target;
       if (!el) return;
+
+      // NEVER capture changes on sensitive / credential fields.
+      if (isSensitiveField(el)) return;
 
       const payload = {
         action: "change",

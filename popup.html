@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Session Recorder</title>
+  <style>
+    /* ───────── Reset & base ───────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      width: 400px;
+      min-height: 260px;
+      font-family: "Segoe UI", Inter, system-ui, -apple-system, sans-serif;
+      background: #0f1117;
+      color: #e2e4e9;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* ───────── Header ───────── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .header h1 {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      background: linear-gradient(135deg, #6366f1, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+    .badge.idle {
+      background: rgba(100,116,139,.25);
+      color: #94a3b8;
+    }
+    .badge.recording {
+      background: rgba(239,68,68,.2);
+      color: #f87171;
+      animation: pulse 1.6s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .55; }
+    }
+
+    /* ───────── Buttons ───────── */
+    .controls {
+      display: flex;
+      gap: 8px;
+    }
+    button {
+      flex: 1;
+      padding: 8px 0;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s, transform .1s;
+    }
+    button:active { transform: scale(.97); }
+
+    #toggleBtn {
+      background: linear-gradient(135deg, #6366f1, #818cf8);
+      color: #fff;
+    }
+    #toggleBtn.stop {
+      background: linear-gradient(135deg, #ef4444, #f87171);
+    }
+    #copyBtn {
+      background: rgba(99,102,241,.15);
+      color: #a5b4fc;
+    }
+    #copyBtn:hover { background: rgba(99,102,241,.28); }
+    #clearBtn {
+      background: rgba(239,68,68,.12);
+      color: #fca5a5;
+    }
+    #clearBtn:hover { background: rgba(239,68,68,.25); }
+
+    /* ───────── Step counter ───────── */
+    .meta {
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    /* ───────── JSON output ───────── */
+    #output {
+      flex: 1;
+      min-height: 160px;
+      max-height: 340px;
+      overflow-y: auto;
+      background: #161923;
+      border: 1px solid #1e2231;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-family: "Fira Code", "Cascadia Code", "JetBrains Mono", monospace;
+      font-size: 11.5px;
+      line-height: 1.55;
+      color: #c4c9d4;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    /* ───────── Toast ───────── */
+    .toast {
+      position: fixed;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%) translateY(40px);
+      background: #6366f1;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 16px;
+      border-radius: 8px;
+      opacity: 0;
+      pointer-events: none;
+      transition: transform .25s ease, opacity .25s ease;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>Session Recorder</h1>
+    <span id="statusBadge" class="badge idle">Idle</span>
+  </div>
+
+  <div class="controls">
+    <button id="toggleBtn">Start Recording</button>
+    <button id="copyBtn">Copy</button>
+    <button id="clearBtn">Clear</button>
+  </div>
+
+  <div class="meta"><span id="stepCount">0</span> steps recorded</div>
+
+  <div id="output">[]</div>
+
+  <div id="toast" class="toast">Copied!</div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
